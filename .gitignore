@@ -1,1 +1,102 @@
-asd
+from riotwatcher import LolWatcher, ApiError
+import pandas as pd
+import pprint
+
+
+
+# Dependencies to identify me/API key
+lol_watcher = LolWatcher('RGAPI-d7f0a20d-2dd5-4c8a-ba15-0f0776cc3eaf')                      # RIOT API KEY
+my_region = 'na1'                                                                           # Define Region
+me = lol_watcher.summoner.by_name(my_region, 'LuckyFin')                                    # Throw error if name is wrong
+game_version = lol_watcher.data_dragon.versions_for_region(my_region)['n']['champion']      # Latest game version
+current_champ_list = lol_watcher.data_dragon.champions(game_version)                        # Up to date champion list + more
+my_matches = lol_watcher.match.matchlist_by_account(my_region, me['accountId'])             # Limit is 100, can index more
+static_champ_list = lol_watcher.data_dragon.champions(game_version, False, 'en_US')
+
+
+
+# Throw Errors
+try:
+    response = lol_watcher.summoner.by_name(my_region, 'LuckyFin')
+except ApiError as err:
+    if err.response.status_code == 429:                                                     # Throw for rate limiting error
+        print('We should retry in {} seconds.'.format(err.headers['Retry-After']))
+        print('this retry-after is handled by default by the RiotWatcher library')
+        print('future requests wait until the retry-after time passes')
+    elif err.response.status_code == 404:                                                   # Throw for not finding summoner error
+        print('Summoner with that ridiculous name not found.')
+    else:
+        raise
+
+
+
+# Get match info API's
+match0 = my_matches['matches'][0]                                                           # Most recent match
+match_detail0 = lol_watcher.match.by_id(my_region, match0['gameId'])                        # Details of the match
+gameDuration = match_detail0['gameDuration']                                                # Declare and define the game duration (seconds)
+grid = []                                                                                   # Declare a list for our dataframe
+statDict = {}                                                                               # Declare a dictionary of statistics
+participantId = ""
+summonerName = ""
+
+
+
+# Find the Summoner name
+for identity in match_detail0['participantIdentities']:
+    if "LuckyFin" in identity['player']['summonerName']:
+        participantId = identity['participantId']
+        summonerName = identity['player']['summonerName']
+    else:
+        pass
+
+
+
+# Add the stats of the player to the dataframe
+for player in match_detail0['participants']:
+    if player['participantId'] == participantId:
+        statDict['Player'] = summonerName
+        championId = player['championId']
+        statDict['Champion'] = championId
+        statDict['Win/Lost'] = player['stats']['win']
+        if statDict['Win/Lost'] == True:
+            statDict['Win/Lost'] = 'Win'
+        else:
+            statDict['Win/Lost'] = 'Lost'
+        statDict['Kills'] = player['stats']['kills']
+        statDict['Deaths'] = player['stats']['deaths']
+        statDict['Assists'] = player['stats']['assists']
+        if statDict['Deaths'] == 0:
+            statDict['KDA'] = (player['stats']['kills'] + player['stats']['assists']) / 1
+        else:
+            statDict['KDA'] = (player['stats']['kills'] + player['stats']['assists']) / player['stats']['deaths']
+        statDict['Vision Score'] = player['stats']['visionScore']
+        statDict['Total Minions Killed'] = player['stats']['totalMinionsKilled']
+        statDict['Avg CS/Min'] = (player['stats']['totalMinionsKilled'] / (gameDuration / 60))
+        statDict['Wards Placed'] = player['stats']['wardsPlaced']
+        grid.append(statDict)
+    else:
+        pass
+df = pd.DataFrame(grid)
+pprint.pp(df)
+
+
+# ADDED THESE on 8/21 at 12:43am MST
+#df.to_csv('/Users/luckyfin/PycharmProjects/ColtersBigDick.csv')         # This is for my Mac
+df.to_csv('C:/Users/Peterson/Desktop/LuckyFinProject.csv')               # This code is for PC
+
+# This will make a dictionary of the champions and their number
+champ_dict = {}
+for key in static_champ_list['data']:
+    dict_of_values = (static_champ_list['data'][key])
+    champ_dict[dict_of_values['key']] = dict_of_values['id']
+    # print(dict_of_values['id'])                                 # This will print out the Champion names
+    # print(dict_of_values['key'])                                # This will print out the champion ID number
+# print(champ_dict)
+
+
+
+
+
+
+
+# NEXT STEP IS TO ASSIGN THE CHAMPION NAME TO THE DATAFRAME
