@@ -41,40 +41,6 @@ participantId = ""
 summonerName = ""
 
 
-
-
-
-
-
-# CURRENTLY IN PROGRESS
-# Find the queue ID and its relevant json code
-
-# Python program to read
-# json file
-# Opening JSON file
-f = open('/Users/luckyfin/Desktop/queues.json')
-
-# returns JSON object as
-# a dictionary
-data = json.load(f)
-
-# Iterating through the json
-# list
-for key in data['queueId']:
-    print(key)
-
-# Closing file
-f.close()
-
-
-
-
-
-
-
-
-
-
 # Find the Summoner name
 for identity in match_detail0['participantIdentities']:
     if "LuckyFin" in identity['player']['summonerName']:
@@ -91,6 +57,7 @@ for player in match_detail0['participants']:
         championId = player['championId']
         statDict['Champion'] = championId
 
+        statDict['Queue Type'] = queueId
         statDict['Game Mode'] = gameMode
         statDict['Win/Lost'] = player['stats']['win']
         if statDict['Win/Lost'] == True:
@@ -117,7 +84,7 @@ df = pd.DataFrame(grid)
 # This will make a dictionary of the champions and their number
 champ_dict = {}
 for key in static_champ_list['data']:
-    row = (static_champ_list['data'][key])
+    row = static_champ_list['data'][key]
     champ_dict[row['key']] = row['id']
     #print(dict_of_values['id'])                                 # This will print out the Champion names
     #print(dict_of_values['key'])                                # This will print out the champion ID number
@@ -128,27 +95,38 @@ for key in static_champ_list['data']:
 # This will change the champion numbers to actual names in the Dataframe.
 for row in grid:
     row['Champion'] = champ_dict[str(row['Champion'])]
-
-
 df = pd.DataFrame(grid)
+
+
+# This json file contains the league game ID's and their descriptions
+# Get the json file from:   https://static.developer.riotgames.com/docs/lol/queues.json
+f = open('/Users/luckyfin/Desktop/queues.json')                     # Open on skyes mac
+#f = open('C:/Users/Desktop/queues.json')                           # Open on skyes PC
+queueId_dict = {}
+data = json.load(f)
+
+
+
+
+
+# CURRENTLY IN PROGRESS
+for row in data:
+    print(row['queueId'])                               # This will print the ID's of each game (int)
+    # print(row['description'])                           # This will print the game type (str)
+
+
+
+
+
+
+
+
 pprint.pp(df)
-
-
 # Lastly, pretty print the files and write to an EXCEL sheet
 df.to_csv('/Users/luckyfin/PycharmProjects/LeagueStatTracker.csv')
 #df.to_csv('C:/Users/Desktop/LeagueStatTracker.csv')
+f.close()
 
-
-
-
-
-
-
-
-
-
-
-            
 
 
 
@@ -181,5 +159,4 @@ my_ranked_stats = lol_watcher.league.by_summoner(my_region, me['id'])
 # gameType = match_detail0['gameType']
 
 
-# I ALSO WANT GAME DURATION, SEASON NUMBER, PLATFORM (NA/EU), GAMEMODE (URF/RANKED SOLO), QUEUEID?
-
+# I ALSO WANT GAME DURATION, SEASON NUMBER, PLATFORM (NA/EU), GAMEMODE (URF/RANKED SOLO), AND QUEUEID
