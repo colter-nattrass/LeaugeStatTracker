@@ -160,3 +160,4 @@ my_ranked_stats = lol_watcher.league.by_summoner(my_region, me['id'])
 
 
 # I ALSO WANT GAME DURATION, SEASON NUMBER, PLATFORM (NA/EU), GAMEMODE (URF/RANKED SOLO), AND QUEUEID
+
